@@ -1,46 +1,67 @@
+# Egyptian Museum Virtual Experience
 
-# Project File Structure
+A virtual 3D museum experience built with Three.js, showcasing Egyptian artifacts and interactive elements.
 
-## JavaScript Files
+## Project Structure
 
-### Core
+### JavaScript Files
+
+#### Core
 ```
 js/core/
-└── Scene.js            # Main scene setup and management
-```FILES.md
+└── Scene.js                    # Main scene setup and management
+```
 
-### Environment
+#### Environment
 ```
 js/environment/
-├── WallBuilder.js      # Handles museum wall construction
-└── EnvironmentBuilder.js # Overall environment setup
+├── WallBuilder.js             # Handles museum wall construction
+└── EnvironmentBuilder.js      # Overall environment setup
 ```
 
-### Objects
-```FILES.md
+#### Objects
+```
 js/objects/
-├── PedestalManager.js  # Manages artifact pedestals
-└── ArtifactLoader.js   # Handles loading of 3D artifacts
+├── PedestalManager.js         # Manages artifact pedestals
+└── ArtifactLoader.js         # Handles loading of 3D artifacts
 ```
 
-### Shaders
+#### Shaders
 ```
 js/shaders/
-└── ShaderManager.js    # Custom shader management
+└── ShaderManager.js          # Custom shader management
 ```
 
-### Entry Point
+#### Entry Point
 ```
 js/
-└── main.js            # Application entry point
+└── main.js                   # Application entry point
 ```
 
-## Assets
+### Assets
 ```
 assets/
-└── characters/
-    └── vase/
-        └── vase.obj   # 3D model for vase artifact
+├── characters/
+│   ├── dagger/
+│   │   └── dagger_texture.jpg
+│   ├── nefertiti/
+│   │   └── texture.png
+│   ├── pyramid/
+│   │   └── pyramidtexture.jpeg
+│   ├── sphinx/
+│   │   └── sphinx.jpg
+│   └── vase/
+│       ├── atv_texture.jpg
+│       └── vase_texture.jpg
+├── floor/
+│   └── image.png
+├── pedestal/
+│   └── image.png
+└── poster/
+    ├── poster1.jpg
+    ├── poster2.jpeg
+    ├── poster3.jpeg
+    └── poster4.jpeg
 ```
 
 ## File Descriptions
@@ -59,19 +80,7 @@ assets/
 ### Shader System
 - **ShaderManager.js**: Contains custom shader implementations for special visual effects.
 
-### Assets
-- **vase.obj**: 3D model file for museum artifact display.
-
 ## Dependencies
 - Three.js
 - WebGL support
 - Modern JavaScript (ES6+)
-```
-
-This FILES.md provides:
-- Clear hierarchical structure of the project
-- Brief descriptions of key files
-- Organization by functionality
-- Asset locations
-
-You can modify this file as the project structure evolves or add more detailed descriptions for specific components.
