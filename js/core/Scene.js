@@ -1,36 +1,47 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+/**
+ * Main Scene class responsible for managing the 3D environment
+ * Handles scene initialization, controls, lighting, and rendering
+ */
 export class Scene {
+    /**
+     * Constructor initializes the scene, camera, renderer, and control systems
+     */
     constructor() {
         this.scene = new THREE.Scene();
         this.initScene();
         this.setupLighting();
         this.setupControls();
         
-        // Store skybox material for animation
+        // Store reference to skybox material for dynamic updates
         this.skyboxMaterial = this.scene.children[0].material;
 
-        // Initialize key states
+        // Array to track pressed keys: [W, A, S, D, E, Q]
         this.key_states = [false, false, false, false, false, false];
         this.setupKeyboardControls();
         this.setupMouseControls();
 
-        // Mouse rotation variables
+        // Variables for tracking mouse movement and camera rotation
         this.lastMouseX = 0;
         this.lastMouseY = 0;
-        this.x_rotate = Math.PI / 10;
-        this.y_rotate = 0;
+        this.x_rotate = Math.PI / 10;  // Initial X rotation (pitch)
+        this.y_rotate = 0;             // Initial Y rotation (yaw)
     }
 
+    /**
+     * Initializes the basic scene components including skybox, camera, and renderer
+     */
     initScene() {
-        // Create skybox
+        // Create skybox with dynamic sunset shader
         const skyboxGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
         const skyboxMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                time: { value: 0 }
+                time: { value: 0 }  // Uniform for animating the sky
             },
             vertexShader: `
+                // Vertex shader calculates world position for fragment shader
                 varying vec3 vWorldPosition;
                 
                 void main() {
@@ -40,31 +51,32 @@ export class Scene {
                 }
             `,
             fragmentShader: `
+                // Fragment shader creates dynamic sunset effect
                 uniform float time;
                 varying vec3 vWorldPosition;
                 
                 vec3 getSunsetColor(vec3 rayDir) {
-                    // Sky colors
+                    // Define sky gradient colors
                     vec3 skyColorTop = vec3(0.1, 0.2, 0.4);    // Dark blue
                     vec3 skyColorMid = vec3(0.8, 0.35, 0.15);  // Orange
                     vec3 skyColorBot = vec3(0.9, 0.6, 0.3);    // Light orange/yellow
                     
-                    // Sun position and colors
+                    // Animate sun position
                     vec3 sunDir = normalize(vec3(sin(time * 0.1), -0.4, cos(time * 0.1)));
                     vec3 sunColor = vec3(1.0, 0.7, 0.3);
                     
-                    // Calculate sky gradient
+                    // Create sky gradient based on view direction
                     float y = rayDir.y;
                     vec3 skyColor = mix(skyColorBot, 
                                       mix(skyColorMid, skyColorTop, 
                                           smoothstep(0.0, 0.8, y)), 
                                       smoothstep(-0.2, 0.2, y));
                     
-                    // Add sun
+                    // Add sun glow effect
                     float sunIntensity = pow(max(dot(rayDir, sunDir), 0.0), 32.0);
                     skyColor += sunColor * sunIntensity * 2.0;
                     
-                    // Add clouds
+                    // Generate animated cloud pattern
                     float cloudPattern = sin(rayDir.x * 10.0 + time) * 
                                        cos(rayDir.z * 10.0 + time * 0.5) * 0.5 + 0.5;
                     float cloudMask = smoothstep(0.3, 0.7, cloudPattern) * 
@@ -72,7 +84,7 @@ export class Scene {
                     vec3 cloudColor = mix(vec3(1.0), vec3(0.8, 0.7, 0.6), cloudMask);
                     skyColor = mix(skyColor, cloudColor, cloudMask * 0.3);
                     
-                    // Add atmosphere effect
+                    // Add atmospheric scattering effect
                     float atmosphere = pow(1.0 - max(rayDir.y, 0.0), 3.0);
                     skyColor += vec3(0.8, 0.6, 0.3) * atmosphere * 0.3;
                     
@@ -86,26 +98,32 @@ export class Scene {
                     gl_FragColor = vec4(color, 1.0);
                 }
             `,
-            side: THREE.BackSide
+            side: THREE.BackSide  // Render on inside of cube
         });
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
         this.scene.add(skybox);
 
+        // Setup perspective camera
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         this.camera.position.set(0, 10, 40);
 
+        // Initialize WebGL renderer with antialiasing and shadows
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(this.renderer.domElement);
 
+        // Handle window resizing
         window.addEventListener('resize', () => this.onWindowResize(), false);
     }
 
+    /**
+     * Sets up camera controls (currently disabled in favor of custom controls)
+     */
     setupControls() {
-        // Comment out or remove OrbitControls
+        // OrbitControls temporarily disabled for custom control implementation
         /*
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
@@ -118,14 +136,20 @@ export class Scene {
         */
     }
 
+    /**
+     * Sets up scene lighting including ambient light, directional sun light, and fog
+     */
     setupLighting() {
+        // Add ambient light for general scene illumination
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);
 
+        // Add directional sun light with shadows
         const sunLight = new THREE.DirectionalLight(0xffd500, 1.2);
         sunLight.position.set(100, 200, 100);
         sunLight.castShadow = true;
         
+        // Configure shadow properties
         sunLight.shadow.mapSize.width = 2048;
         sunLight.shadow.mapSize.height = 2048;
         sunLight.shadow.camera.near = 0.5;
@@ -137,86 +161,107 @@ export class Scene {
         sunLight.shadow.bias = -0.0001;
         
         this.scene.add(sunLight);
+        
+        // Add distance fog effect
         this.scene.fog = new THREE.Fog(0x87CEEB, 200, 1000);
     }
 
+    /**
+     * Handles window resize events by updating camera and renderer
+     */
     onWindowResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
+    /**
+     * Helper method to add objects to the scene
+     */
     add(object) {
         this.scene.add(object);
     }
 
+    /**
+     * Sets up keyboard event listeners
+     */
     setupKeyboardControls() {
-        // Keyboard controls
         document.addEventListener('keydown', (event) => this.onDocumentKeyDown(event), false);
         document.addEventListener('keyup', (event) => this.onDocumentKeyUp(event), false);
     }
 
+    /**
+     * Sets up mouse event listeners
+     */
     setupMouseControls() {
-        // Mouse controls
         window.addEventListener('mousemove', (event) => this.onDocumentMouseMove(event), false);
     }
 
+    /**
+     * Handles keydown events for movement controls
+     */
     onDocumentKeyDown(event) {
         const keyCode = event.which;
-        if (keyCode == 87)  // W
+        if (keyCode == 87)  // W - Forward
             this.key_states[0] = true;
-        if (keyCode == 83)  // S
+        if (keyCode == 83)  // S - Backward
             this.key_states[2] = true;
-        if (keyCode == 65)  // A
+        if (keyCode == 65)  // A - Left
             this.key_states[1] = true;
-        if (keyCode == 68)  // D
+        if (keyCode == 68)  // D - Right
             this.key_states[3] = true;
-        if (keyCode == 69)  // E  
+        if (keyCode == 69)  // E - Up
             this.key_states[4] = true;
-        if (keyCode == 81)  // Q
+        if (keyCode == 81)  // Q - Down
             this.key_states[5] = true;
     }
 
+    /**
+     * Handles keyup events for movement controls
+     */
     onDocumentKeyUp(event) {
         const keyCode = event.which;
-        if (keyCode == 87)  // W
-            this.key_states[0] = false;
-        if (keyCode == 83)  // S
-            this.key_states[2] = false;
-        if (keyCode == 65)  // A
-            this.key_states[1] = false;
-        if (keyCode == 68)  // D
-            this.key_states[3] = false;
-        if (keyCode == 69)  // E  
-            this.key_states[4] = false;
-        if (keyCode == 81)  // Q
-            this.key_states[5] = false;
+        if (keyCode == 87) this.key_states[0] = false;  // W
+        if (keyCode == 83) this.key_states[2] = false;  // S
+        if (keyCode == 65) this.key_states[1] = false;  // A
+        if (keyCode == 68) this.key_states[3] = false;  // D
+        if (keyCode == 69) this.key_states[4] = false;  // E
+        if (keyCode == 81) this.key_states[5] = false;  // Q
     }
 
+    /**
+     * Handles mouse movement for camera rotation
+     * Only rotates camera when left mouse button is pressed
+     */
     onDocumentMouseMove(event) {
         event.preventDefault();
         
-        if (event.buttons == 1) {
+        if (event.buttons == 1) {  // Left mouse button pressed
             const mouse = new THREE.Vector2();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
+            // Calculate rotation amounts based on mouse movement
             const changeAmountX = (mouse.x - this.lastMouseX) * 1;
             const changeAmountY = (mouse.y - this.lastMouseY) * 1;
             
             this.lastMouseX = mouse.x;
             this.lastMouseY = mouse.y;
             
+            // Update rotation angles
             this.x_rotate += -changeAmountY;
             this.y_rotate -= changeAmountX;
             
+            // Clamp vertical rotation to prevent over-rotation
             if (this.x_rotate > Math.PI / 2) this.x_rotate = Math.PI / 2;
             if (this.x_rotate < -Math.PI / 2) this.x_rotate = -Math.PI / 2;
             
+            // Apply rotations to camera
             this.camera.setRotationFromEuler(new THREE.Euler(0, 0, 0, 'XYZ'));
             this.camera.rotateOnAxis(new THREE.Vector3(0, 1, 0), this.y_rotate);
             this.camera.rotateOnAxis(new THREE.Vector3(1, 0, 0), this.x_rotate);
         } else {
+            // Update mouse position even when not rotating
             const mouse = new THREE.Vector2();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -226,26 +271,34 @@ export class Scene {
         }
     }
 
-    // Update method to handle movement based on key states
+    /**
+     * Updates camera position based on current key states
+     * Movement is relative to camera's rotation
+     */
     updateMovement() {
         const moveSpeed = 0.5;
         const moveVector = new THREE.Vector3();
 
-        if (this.key_states[0]) moveVector.z -= moveSpeed; // W
-        if (this.key_states[2]) moveVector.z += moveSpeed; // S
-        if (this.key_states[1]) moveVector.x -= moveSpeed; // A
-        if (this.key_states[3]) moveVector.x += moveSpeed; // D
-        if (this.key_states[4]) moveVector.y += moveSpeed; // E
-        if (this.key_states[5]) moveVector.y -= moveSpeed; // Q
+        // Apply movement based on pressed keys
+        if (this.key_states[0]) moveVector.z -= moveSpeed; // W - Forward
+        if (this.key_states[2]) moveVector.z += moveSpeed; // S - Backward
+        if (this.key_states[1]) moveVector.x -= moveSpeed; // A - Left
+        if (this.key_states[3]) moveVector.x += moveSpeed; // D - Right
+        if (this.key_states[4]) moveVector.y += moveSpeed; // E - Up
+        if (this.key_states[5]) moveVector.y -= moveSpeed; // Q - Down
 
-        // Apply movement relative to camera rotation
+        // Transform movement vector by camera rotation
         moveVector.applyQuaternion(this.camera.quaternion);
         this.camera.position.add(moveVector);
     }
 
+    /**
+     * Main render method called each frame
+     * Updates movement, skybox animation, and renders the scene
+     */
     render() {
-        this.updateMovement();  // Add movement update
-        // Update skybox time
+        this.updateMovement();
+        // Update skybox time uniform for animation
         if (this.skyboxMaterial.uniforms) {
             this.skyboxMaterial.uniforms.time.value = performance.now() * 0.001;
         }

@@ -5,7 +5,14 @@ import { WallBuilder } from './environment/WallBuilder.js';
 import { AnimationManager } from './animation/AnimationManager.js';
 import { PedestalManager } from './objects/PedestalManager.js';
 
+/**
+ * Main ArtGallery class that orchestrates the entire 3D museum experience
+ * Manages scene setup, artifact loading, environment building, and animations
+ */
 class ArtGallery {
+    /**
+     * Initializes all necessary components of the art gallery
+     */
     constructor() {
         this.scene = new Scene();
         this.artifactLoader = new ArtifactLoader(this.scene);
@@ -17,29 +24,38 @@ class ArtGallery {
         this.init();
     }
 
+    /**
+     * Initializes the gallery environment, loads artifacts, and starts animations
+     * @async
+     */
     async init() {
-        // Build environment
+        // Create the basic environment structure
         await this.environmentBuilder.createEnvironment();
         const wallMaterials = await this.wallBuilder.createWalls();
 
-        // Create pedestals and get pyramid material
+        // Setup pedestals and get the special pyramid material
         const pyramidMaterial = this.pedestalManager.createPedestalsAndObjects();
 
-        // Load artifacts
+        // Load all 3D artifacts
         const artifacts = await this.loadArtifacts();
         
-        // Setup animations with all animated materials
+        // Configure animations for all animated materials
         this.animationManager.addAnimatables([
             ...artifacts,
             { material: pyramidMaterial },
             wallMaterials
         ]);
         
-        // Start animation loop
+        // Start the render loop
         this.animate();
     }
 
+    /**
+     * Loads all artifacts with their specific configurations
+     * @returns {Promise<Array>} Array of loaded artifacts with their materials
+     */
     async loadArtifacts() {
+        // Configuration for each artifact including position, rotation, and scale
         const artifactConfigs = [
             {
                 modelPath: 'characters/dagger/dagger.obj',
@@ -71,11 +87,15 @@ class ArtGallery {
             }
         ];
 
+        // Load all artifacts in parallel
         return Promise.all(
             artifactConfigs.map(config => this.artifactLoader.loadArtifact(config))
         );
     }
 
+    /**
+     * Main animation loop that updates all animated elements and renders the scene
+     */
     animate() {
         requestAnimationFrame(() => this.animate());
         this.animationManager.update(performance.now() * 0.001);
@@ -83,6 +103,7 @@ class ArtGallery {
     }
 }
 
+// Initialize the gallery when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     new ArtGallery();
 }); 
