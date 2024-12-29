@@ -1,0 +1,16 @@
+{
+  "name": "egyptian-museum",
+  "version": "1.0.0",
+  "description": "3D Egyptian Museum using Three.js",
+  "main": "js/main.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "three": "^0.159.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.10"
+  }
+} 
