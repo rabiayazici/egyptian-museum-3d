@@ -2,6 +2,14 @@
 
 A virtual 3D museum experience built with Three.js, showcasing Egyptian artifacts and interactive elements.
 
+## 📸 Preview
+
+![Egyptian Museum Preview](docs/preview.png)
+
+<div align="center">
+  <img src="docs/museum_image.jpg" alt="Museum Interior" width="400"/>
+</div>
+
 ## Project Structure
 
 ### JavaScript Files
