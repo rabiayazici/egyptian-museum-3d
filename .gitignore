@@ -32,9 +32,6 @@ Thumbs.db
 # Three.js specific
 *.gltf
 *.glb
-*.obj
-*.mtl
-*.fbx
 *.blend
 *.blend1
 
